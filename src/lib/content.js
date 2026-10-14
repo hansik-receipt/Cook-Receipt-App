@@ -220,9 +220,32 @@ function splitItems(line) {
   return out
 }
 
+const ENTITY = { amp: '&', lt: '<', gt: '>', quot: '"', apos: "'", nbsp: ' ' }
+function decodeEntities(t) {
+  return t.replace(/&(#x[0-9a-f]+|#\d+|\w+);/gi, (all, e) => {
+    if (e[0] === '#') return String.fromCodePoint(e[1] === 'x' || e[1] === 'X' ? parseInt(e.slice(2), 16) : Number(e.slice(1)))
+    return ENTITY[e.toLowerCase()] ?? all
+  })
+}
+
+/**
+ * 리더 서비스가 막혔을 때: 원본 HTML 의 og:title / og:description 에서 캡션을 꺼낸다
+ *   og:title       = `작성자 on Instagram: "캡션"`
+ *   og:description = `좋아요 652개, 댓글 27개 - 작성자 - 10월 9일: "캡션"`
+ */
+export function instagramCaptionFromHtml(html) {
+  const found = []
+  for (const prop of ['og:title', 'og:description', 'twitter:title', 'description']) {
+    const tag = String(html || '').match(new RegExp(`<meta[^>]+(?:property|name)=["']${prop}["'][^>]*>`, 'i'))?.[0]
+    const content = tag?.match(/content=(["'])([\s\S]*?)\1/i)?.[2]
+    const m = content && decodeEntities(content).match(/:\s*["“]([\s\S]*)["”]\s*\.?\s*$/)
+    if (m) found.push(m[1].trim())
+  }
+  return found.sort((a, b) => b.length - a.length)[0] || ''
+}
+
 /** 인스타그램 리더 텍스트 → { ingredients, steps, tips, text } (재료·순서를 못 찾으면 { text }) */
-export function parseInstagramText(raw) {
-  const caption = instagramCaption(raw)
+export function parseInstagramText(raw, caption = instagramCaption(raw)) {
   if (!caption) return null
   const lines = caption
     .split('\n')
@@ -329,7 +352,10 @@ export async function fetchRecipeContent(url) {
   if (/(^|\.)instagram\.com$/.test(hostOf(url))) {
     // 원본 HTML은 로그인 화면이라 리더 텍스트에서 캡션을 꺼낸다
     const raw = await getText(`https://r.jina.ai/${url}`)
-    const r = parseInstagramText(raw) || structureText(raw)
+    let r = parseInstagramText(raw)
+    // 리더 서비스가 인스타그램을 잠시 막는 일이 있다 → 원본 HTML 의 미리보기 정보로
+    if (!r) r = parseInstagramText('', instagramCaptionFromHtml(await getText(`https://api.allorigins.win/raw?url=${encodeURIComponent(url)}`)))
+    if (!r) r = structureText(raw)
     return r && { ...r, parser: IG_PARSER }
   }
   const a = fromHtml(await getText(`https://api.allorigins.win/raw?url=${encodeURIComponent(url)}`))

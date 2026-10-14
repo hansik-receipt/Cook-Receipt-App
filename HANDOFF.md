@@ -17,7 +17,7 @@
 | 조직 저장소 | `hansik-receipt` 조직 쪽에서 PR #2가 들어옴 → README 설치 주소가 `https://hansik-receipt.github.io/Cook-Receipt-App/` 로 바뀜 |
 | 배포 | GitHub Pages (GitHub Actions). push 하면 자동 배포. 원래 주소 `https://hoyasiro.github.io/Cook-Receipt-App/` |
 | 서버 | **없음**. 데이터는 휴대폰 브라우저 localStorage 에만 있음 |
-| 상태 | 단위 테스트 18개 통과, 배포 정상. 커밋하지 않은 변경 없음 |
+| 상태 | 단위 테스트 19개 통과, 배포 정상. 커밋하지 않은 변경 없음 |
 
 ## 2. 기술 스택
 
@@ -54,7 +54,7 @@ src/
     voice.js              음성 명령 해석(parseCommand), 한국어 숫자, 연속 인식기, TTS
     timers.js             단계 문장 시간 인식, 타이머 저장·실행, 종료 알림·알람음
 tests/recipes.test.js     단위 테스트 14개 (노트 해석, 공유, 검색, 음성 명령, JSON-LD, 텍스트 정리, 시간 인식)
-tests/instagram.test.js   인스타그램 캡션 정리 4개 (실제 릴스 텍스트 형식)
+tests/instagram.test.js   인스타그램 캡션 정리 5개 (실제 릴스 텍스트 형식, og:title 대체 경로)
 .github/workflows/deploy.yml   push(main, claude/voice-recipe-app-8rjc7d)·수동 실행 → 테스트 → 빌드 → Pages 배포
 ```
 
@@ -97,6 +97,7 @@ tests/instagram.test.js   인스타그램 캡션 정리 4개 (실제 릴스 텍�
 |---|---|---|
 | 웹 레시피 HTML | `api.allorigins.win/raw` | 다음 단계로 |
 | 리더(HTML·텍스트) | `r.jina.ai` | "앱 안에서 보여줄 수 없었어요" + 원본 열기 |
+| 인스타그램 캡션 | `r.jina.ai` 텍스트 → 막히면 `allorigins` 원본 HTML 의 `og:title` | 저장된 내용 유지. jina 는 남의 과다 요청 때문에 인스타그램 익명 접근을 몇십 분~몇 시간 막기도 한다(403 AbuseAlleviationError, 2026-10-14 겪음) |
 | 유튜브 제목 | `noembed.com` | 썸네일만 (i.ytimg는 ID로 직접) |
 | 웹 썸네일·제목 | `api.microlink.io` (무료 한도 하루 약 50회) | 첫 글자 아이콘 |
 | 영상 재생·제어 | YouTube IFrame API | — |
@@ -116,7 +117,7 @@ tests/instagram.test.js   인스타그램 캡션 정리 4개 (실제 릴스 텍�
 
 ```bash
 npm install
-npm test                                         # 단위 테스트 (18개)
+npm test                                         # 단위 테스트 (19개)
 BASE_PATH=/Cook-Receipt-App/ npm run build       # 배포와 같은 경로로 빌드
 npx vite preview --port 4173                     # http://localhost:4173/Cook-Receipt-App/
 ```

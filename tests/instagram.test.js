@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { instagramCaption, parseInstagramText } from '../src/lib/content.js'
+import { instagramCaption, instagramCaptionFromHtml, parseInstagramText } from '../src/lib/content.js'
 
 // 실제 릴스(떡볶이)를 리더 서비스로 받은 텍스트 형식. 캡션이 제목과 본문에 두 번 들어 있다.
 const CAPTION = `이 떡볶이 레시피의 역사에 대해 말해보자면
@@ -158,5 +158,22 @@ describe('instagram', () => {
     const r = parseInstagramText('Title: a on Instagram: "오늘 저녁은 집밥! 너무 맛있었어요 다들 좋은 하루 보내세요 #집밥"\nURL Source: x\nMarkdown Content:\nLog In')
     expect(r).toEqual({ text: '오늘 저녁은 집밥! 너무 맛있었어요 다들 좋은 하루 보내세요' })
     expect(parseInstagramText('Title: 로그인\nURL Source: x')).toBeNull()
+  })
+})
+
+describe('instagram HTML (리더 서비스가 막혔을 때)', () => {
+  it('og:title / og:description 에서 캡션을 꺼낸다', () => {
+    const esc = (t) => t.replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/\n/g, '&#x0a;')
+    const html = `<html><head>
+<meta property="og:description" content="652 likes, 27 comments - natashablue_life on October 9, 2026: &quot;짧게 잘린 캡션&quot;. " />
+<meta property="og:title" content="natashablue life on Instagram: &quot;${esc(CAPTION)}&quot;" />
+</head></html>`
+    const cap = instagramCaptionFromHtml(html)
+    expect(cap).toBe(CAPTION)
+    const r = parseInstagramText('', cap)
+    expect(r.ingredients).toContain('떡볶이떡 250g')
+    expect(r.tips).toHaveLength(2)
+    expect(instagramCaptionFromHtml('<html>Log in</html>')).toBe('')
+    expect(instagramCaptionFromHtml(null)).toBe('')
   })
 })
