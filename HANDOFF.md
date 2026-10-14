@@ -17,7 +17,7 @@
 | 조직 저장소 | `hansik-receipt` 조직 쪽에서 PR #2가 들어옴 → README 설치 주소가 `https://hansik-receipt.github.io/Cook-Receipt-App/` 로 바뀜 |
 | 배포 | GitHub Pages (GitHub Actions). push 하면 자동 배포. 원래 주소 `https://hoyasiro.github.io/Cook-Receipt-App/` |
 | 서버 | **없음**. 데이터는 휴대폰 브라우저 localStorage 에만 있음 |
-| 상태 | 단위 테스트 14개 통과, 배포 정상. 커밋하지 않은 변경 없음 |
+| 상태 | 단위 테스트 18개 통과, 배포 정상. 커밋하지 않은 변경 없음 |
 
 ## 2. 기술 스택
 
@@ -49,11 +49,12 @@ src/
   lib/
     recipes.js            순수 함수: URL·유튜브 ID·출처·카테고리 추측·노트 텍스트 해석·공유값 해석·검색
     store.js              localStorage 저장, 추가/수정/삭제, 썸네일·제목 채우기, 레시피 내용 미리 받기(prefetch)
-    content.js            웹 레시피 → 재료·단계 (JSON-LD → 만개의레시피 DOM → 리더 텍스트 정리)
+    content.js            웹 레시피 → 재료·단계 (JSON-LD → 만개의레시피 DOM → 리더 텍스트 정리), 인스타그램 캡션 → 재료·순서·팁
     meta.js               썸네일·제목 (유튜브: i.ytimg + noembed, 그 외: microlink)
     voice.js              음성 명령 해석(parseCommand), 한국어 숫자, 연속 인식기, TTS
     timers.js             단계 문장 시간 인식, 타이머 저장·실행, 종료 알림·알람음
 tests/recipes.test.js     단위 테스트 14개 (노트 해석, 공유, 검색, 음성 명령, JSON-LD, 텍스트 정리, 시간 인식)
+tests/instagram.test.js   인스타그램 캡션 정리 4개 (실제 릴스 텍스트 형식)
 .github/workflows/deploy.yml   push(main, claude/voice-recipe-app-8rjc7d)·수동 실행 → 테스트 → 빌드 → Pages 배포
 ```
 
@@ -61,7 +62,7 @@ tests/recipes.test.js     단위 테스트 14개 (노트 해석, 공유, 검색,
 
 | 키 | 내용 |
 |---|---|
-| `cook-recipes:v1` | 레시피 배열. `{id, url, title, category, memo, image, source, favorite, createdAt, openedAt, openCount, content?, contentFailedAt?}`. `content` = `{ingredients[], steps[{text,image?}], text?, savedAt}` |
+| `cook-recipes:v1` | 레시피 배열. `{id, url, title, category, memo, image, source, favorite, createdAt, openedAt, openCount, content?, contentFailedAt?}`. `content` = `{ingredients[], steps[{text,image?}], tips?[], text?, parser?, savedAt}` (재료 속 `[양념소스]` 는 소제목) |
 | `cook-recipes:timers` | 실행 중·끝난 타이머 (`endAt` 종료 시각으로 저장 → 새로고침해도 이어짐) |
 | `cook-recipes:font` / `view` / `voice` / `dial` | 요리 모드 글씨 크기, 보기 방식, 음성 켜짐, 다이얼 마지막 값 |
 
@@ -83,6 +84,7 @@ tests/recipes.test.js     단위 테스트 14개 (노트 해석, 공유, 검색,
 | `da2aa44` → `49ab230` | 타이머 30초 선택지 → 분·초 **시계 다이얼 팝업** | 텍스트 입력 대신 다이얼 |
 | `05a8316` → `d4aadf6` | 유튜브 설명란·챕터로 단계 정리 → **되돌림(revert)** | "별로 효과가 없어". 테스트 영상 대부분 설명란에 레시피가 없었음 |
 | `a152a5a`, `8a59062` | README 설치 안내 보강, 조직 주소로 변경 (다른 세션, PR #1·#2) | |
+| (이번 PR) | 인스타그램 릴스: 리더 텍스트에서 캡션만 꺼내 사연·해시태그·댓글을 버리고 재료·순서·💡팁으로 정리, 원문은 접어서 보관 | "텍스트는 넘어오는데 필러가 많다" |
 
 사용자가 선호하는 진행 방식:
 - 한국어로, 짧고 실용적으로 답한다. 바꾸면 **테스트 → 빌드 → push → 배포 성공 확인**까지 하고 결과를 알린다.
@@ -107,13 +109,14 @@ tests/recipes.test.js     단위 테스트 14개 (노트 해석, 공유, 검색,
 - **음성 인식**은 크롬 Web Speech API에 의존한다. 다시 듣기 시작할 때마다 "띵" 소리가 날 수 있다. 영상 소리를 명령으로 잘못 알아듣지 않도록 14자가 넘는 문장은 무시한다.
 - **유튜브 레시피는 영상 + 내 메모만** 보여준다. 단계 카드는 없다.
 - 만개의레시피 추출은 사용자가 "원본처럼 잘 정리된다"고 확인했다. 다른 사이트는 JSON-LD가 있을 때만 잘 된다.
+- **인스타그램은 캡션(설명 글)만** 읽는다. 영상 음성·화면 자막에만 있는 레시피는 못 가져온다. 정리는 규칙 기반(수량 단위·번호·조리 동사)이라 형식이 특이한 캡션은 놓칠 수 있다 → 원문 접기로 보완. 규칙을 바꾸면 `content.js` 의 `IG_PARSER` 를 올리면 저장된 인스타그램 내용을 다시 받는다.
 - 다이얼은 최대 59분 59초다. 1시간 이상은 음성("1시간 타이머")이나 단계 문장 인식으로 맞춘다.
 
 ## 8. 개발·검증 방법
 
 ```bash
 npm install
-npm test                                         # 단위 테스트 (14개)
+npm test                                         # 단위 테스트 (18개)
 BASE_PATH=/Cook-Receipt-App/ npm run build       # 배포와 같은 경로로 빌드
 npx vite preview --port 4173                     # http://localhost:4173/Cook-Receipt-App/
 ```

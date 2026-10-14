@@ -284,6 +284,13 @@ main { padding: 12px 16px 110px; max-width: 980px; margin: 0 auto; }
 .ingredients h3, .steps h3 { font-size: 0.95em; margin: 14px 0 8px; color: var(--accent); }
 .ingredients ul { margin: 0; padding: 12px 14px 12px 32px; background: var(--surface); border-radius: 14px; font-weight: 600; }
 .ingredients li { padding: 2px 0; }
+.ingredients li.group { list-style: none; margin-left: -18px; }
+.ingredients li.group, .focus-ingredients li.group { color: var(--accent); font-size: 0.9em; }
+.tips { list-style: none; margin: 10px 0 0; padding: 10px 14px; background: var(--surface); border-radius: 14px; border-left: 4px solid var(--accent); font-size: 0.9em; }
+.tips li { padding: 3px 0; }
+.original { margin-top: 16px; font-size: 0.85em; color: var(--muted); }
+.original summary { cursor: pointer; padding: 8px 0; font-weight: 600; }
+.original p { margin: 0 0 0.6em; }
 .steps ol { list-style: none; margin: 0; padding: 0; }
 .steps li {
   display: flex; gap: 12px; padding: 14px; border-radius: 14px; margin-bottom: 10px;

@@ -49,7 +49,10 @@ const loading = computed(() => isContentLoading(props.recipe.id))
 const failed = computed(() => !content.value && !loading.value && !!props.recipe.contentFailedAt)
 const ingredients = computed(() => content.value?.ingredients || [])
 const steps = computed(() => content.value?.steps || [])
+const tips = computed(() => content.value?.tips || [])
 const paragraphs = computed(() => (content.value?.text || '').split(/\n{2,}|\n/).filter(Boolean))
+// 재료 목록 속 소제목 "[양념소스]"
+const isGroup = (it) => /^\[.+\]$/.test(it)
 const savedAt = computed(() => {
   const t = content.value?.savedAt
   return t ? new Date(t).toLocaleDateString('ko-KR', { month: 'long', day: 'numeric' }) : ''
@@ -265,7 +268,7 @@ function onVisible() {
 }
 
 onMounted(() => {
-  if (!ytId && !content.value) loadContent(props.recipe.id)
+  if (!ytId) loadContent(props.recipe.id) // 저장돼 있으면 그대로, 예전 방식으로 정리된 인스타그램이면 다시 받는다
   initPlayer()
   keepAwake()
   document.addEventListener('visibilitychange', onVisible)
@@ -373,7 +376,10 @@ onUnmounted(() => {
           <section v-if="page === -1" class="focus-card">
             <p class="focus-label">🥕 재료 <small>{{ ingredients.length }}가지</small></p>
             <ul class="focus-ingredients">
-              <li v-for="(it, i) in ingredients" :key="i">{{ it }}</li>
+              <li v-for="(it, i) in ingredients" :key="i" :class="{ group: isGroup(it) }">{{ it }}</li>
+            </ul>
+            <ul v-if="tips.length" class="tips">
+              <li v-for="(t, i) in tips" :key="i">💡 {{ t }}</li>
             </ul>
           </section>
           <section v-else class="focus-card">
@@ -400,7 +406,10 @@ onUnmounted(() => {
           <section v-if="ingredients.length" class="ingredients">
             <h3>🥕 재료</h3>
             <ul>
-              <li v-for="(it, i) in ingredients" :key="i">{{ it }}</li>
+              <li v-for="(it, i) in ingredients" :key="i" :class="{ group: isGroup(it) }">{{ it }}</li>
+            </ul>
+            <ul v-if="tips.length" class="tips">
+              <li v-for="(t, i) in tips" :key="i">💡 {{ t }}</li>
             </ul>
           </section>
           <section v-if="steps.length" class="steps">
@@ -435,6 +444,12 @@ onUnmounted(() => {
           <p>이 레시피 내용은 앱 안에서 보여줄 수 없었어요.</p>
           <button class="btn ghost" @click="refresh">다시 시도</button>
         </div>
+
+        <!-- 인스타그램: 재료·순서만 추렸으니 원문도 접어서 남겨 둔다 -->
+        <details v-if="(ingredients.length || steps.length) && paragraphs.length && !focusMode" class="original">
+          <summary>📄 원문 글 전체 보기</summary>
+          <p v-for="(t, i) in paragraphs" :key="i">{{ t }}</p>
+        </details>
       </template>
 
       <div class="cook-foot">

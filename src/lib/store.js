@@ -1,7 +1,7 @@
 import { reactive, watch } from 'vue'
 import { detectSource, guessCategory, urlKey } from './recipes.js'
 import { fetchMeta } from './meta.js'
-import { fetchRecipeContent } from './content.js'
+import { fetchRecipeContent, IG_PARSER } from './content.js'
 
 // 레시피는 이 휴대폰 브라우저 저장소(localStorage)에만 보관한다. 서버 없음.
 const KEY = 'cook-recipes:v1'
@@ -126,7 +126,7 @@ export function isContentLoading(id) {
 export async function loadContent(id, { force = false } = {}) {
   const r = state.recipes.find((x) => x.id === id)
   if (!r || r.source === 'youtube') return null
-  if (r.content && !force) return r.content
+  if (r.content && !force && !isStale(r)) return r.content
   if (loadingIds.has(id)) return null
   loadingIds.add(id)
   try {
@@ -145,6 +145,11 @@ export async function loadContent(id, { force = false } = {}) {
   }
 }
 
+// 인스타그램은 캡션 정리 규칙이 바뀌면 다시 받는다 (인터넷이 없으면 저장된 내용을 그대로 쓴다)
+function isStale(r) {
+  return r.source === 'instagram' && r.content?.parser !== IG_PARSER
+}
+
 let prefetching = false
 /** 아직 내용이 없는 웹 레시피를 하나씩 받아 둔다 (도중에 추가된 레시피도 이어서 처리) */
 export async function prefetchContents() {
@@ -159,7 +164,7 @@ export async function prefetchContents() {
         (r) =>
           !tried.has(r.id) &&
           r.source !== 'youtube' &&
-          !r.content &&
+          (!r.content || isStale(r)) &&
           !(r.contentFailedAt && now - r.contentFailedAt < RETRY_AFTER)
       )
       if (!next) break
