@@ -17,7 +17,7 @@
 | 조직 저장소 | `hansik-receipt` 조직 쪽에서 PR #2가 들어옴 → README 설치 주소가 `https://hansik-receipt.github.io/Cook-Receipt-App/` 로 바뀜 |
 | 배포 | GitHub Pages (GitHub Actions). push 하면 자동 배포. 원래 주소 `https://hoyasiro.github.io/Cook-Receipt-App/` |
 | 서버 | **없음**. 데이터는 휴대폰 브라우저 localStorage 에만 있음 |
-| 상태 | 단위 테스트 19개 통과, 배포 정상. 커밋하지 않은 변경 없음 |
+| 상태 | 단위 테스트 20개 통과, 배포 정상. 커밋하지 않은 변경 없음 |
 
 ## 2. 기술 스택
 
@@ -54,7 +54,7 @@ src/
     voice.js              음성 명령 해석(parseCommand), 한국어 숫자, 연속 인식기, TTS
     timers.js             단계 문장 시간 인식, 타이머 저장·실행, 종료 알림·알람음
 tests/recipes.test.js     단위 테스트 14개 (노트 해석, 공유, 검색, 음성 명령, JSON-LD, 텍스트 정리, 시간 인식)
-tests/instagram.test.js   인스타그램 캡션 정리 5개 (실제 릴스 텍스트 형식, og:title 대체 경로)
+tests/instagram.test.js   인스타그램 캡션 정리 6개 (실제 릴스 텍스트 형식, og:title 대체 경로, 휴대폰에 저장된 실제 글 fixtures/)
 .github/workflows/deploy.yml   push(main, claude/voice-recipe-app-8rjc7d)·수동 실행 → 테스트 → 빌드 → Pages 배포
 ```
 
@@ -110,14 +110,14 @@ tests/instagram.test.js   인스타그램 캡션 정리 5개 (실제 릴스 텍�
 - **음성 인식**은 크롬 Web Speech API에 의존한다. 다시 듣기 시작할 때마다 "띵" 소리가 날 수 있다. 영상 소리를 명령으로 잘못 알아듣지 않도록 14자가 넘는 문장은 무시한다.
 - **유튜브 레시피는 영상 + 내 메모만** 보여준다. 단계 카드는 없다.
 - 만개의레시피 추출은 사용자가 "원본처럼 잘 정리된다"고 확인했다. 다른 사이트는 JSON-LD가 있을 때만 잘 된다.
-- **인스타그램은 캡션(설명 글)만** 읽는다. 영상 음성·화면 자막에만 있는 레시피는 못 가져온다. 정리는 규칙 기반(수량 단위·번호·조리 동사)이라 형식이 특이한 캡션은 놓칠 수 있다 → 원문 접기로 보완. 규칙을 바꾸면 `content.js` 의 `IG_PARSER` 를 올리면 저장된 인스타그램 내용을 다시 받는다.
+- **인스타그램은 캡션(설명 글)만** 읽는다. 영상 음성·화면 자막에만 있는 레시피는 못 가져온다. 정리는 규칙 기반(수량 단위·번호·조리 동사)이라 형식이 특이한 캡션은 놓칠 수 있다 → 원문 접기로 보완. 규칙을 바꾸면 `content.js` 의 `IG_PARSER` 를 올린다 → 저장된 인스타그램 글을 먼저 휴대폰 안에서 다시 정리하고(인터넷 불필요), 안 되면 다시 받는다.
 - 다이얼은 최대 59분 59초다. 1시간 이상은 음성("1시간 타이머")이나 단계 문장 인식으로 맞춘다.
 
 ## 8. 개발·검증 방법
 
 ```bash
 npm install
-npm test                                         # 단위 테스트 (19개)
+npm test                                         # 단위 테스트 (20개)
 BASE_PATH=/Cook-Receipt-App/ npm run build       # 배포와 같은 경로로 빌드
 npx vite preview --port 4173                     # http://localhost:4173/Cook-Receipt-App/
 ```

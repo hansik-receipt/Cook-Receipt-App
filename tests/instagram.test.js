@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest'
-import { instagramCaption, instagramCaptionFromHtml, parseInstagramText } from '../src/lib/content.js'
+import { readFileSync } from 'node:fs'
+import { instagramCaption, instagramCaptionFromHtml, parseInstagramText, reparseInstagram } from '../src/lib/content.js'
 
 // 실제 릴스(떡볶이)를 리더 서비스로 받은 텍스트 형식. 캡션이 제목과 본문에 두 번 들어 있다.
 const CAPTION = `이 떡볶이 레시피의 역사에 대해 말해보자면
@@ -175,5 +176,19 @@ describe('instagram HTML (리더 서비스가 막혔을 때)', () => {
     expect(r.tips).toHaveLength(2)
     expect(instagramCaptionFromHtml('<html>Log in</html>')).toBe('')
     expect(instagramCaptionFromHtml(null)).toBe('')
+  })
+})
+
+describe('instagram 저장된 글 다시 정리', () => {
+  it('휴대폰에 예전 방식으로 저장된 글(실제)을 인터넷 없이 정리한다', () => {
+    const saved = readFileSync(new URL('./fixtures/instagram-tteok-saved.txt', import.meta.url), 'utf8')
+    const r = reparseInstagram(saved)
+    expect(r.parser).toBeTruthy()
+    expect(r.ingredients).toHaveLength(17)
+    expect(r.ingredients[2]).toBe('[양념소스]')
+    expect(r.tips).toHaveLength(2)
+    expect(r.text.startsWith('이 떡볶이 레시피의 역사')).toBe(true)
+    expect(r.text).not.toMatch(/Reply|Log In|맛있겠어요|Meta/)
+    expect(reparseInstagram('오늘 저녁은 집밥!')).toBeNull()
   })
 })

@@ -1,7 +1,7 @@
 import { reactive, watch } from 'vue'
 import { detectSource, guessCategory, urlKey } from './recipes.js'
 import { fetchMeta } from './meta.js'
-import { fetchRecipeContent, IG_PARSER } from './content.js'
+import { fetchRecipeContent, IG_PARSER, reparseInstagram } from './content.js'
 
 // 레시피는 이 휴대폰 브라우저 저장소(localStorage)에만 보관한다. 서버 없음.
 const KEY = 'cook-recipes:v1'
@@ -126,6 +126,11 @@ export function isContentLoading(id) {
 export async function loadContent(id, { force = false } = {}) {
   const r = state.recipes.find((x) => x.id === id)
   if (!r || r.source === 'youtube') return null
+  // 예전 방식으로 저장된 인스타그램 글은 먼저 저장된 글로 다시 정리해 본다 (인터넷·외부 서비스 없이)
+  if (isStale(r) && r.content?.text) {
+    const local = reparseInstagram(r.content.text)
+    if (local) r.content = { ...local, savedAt: r.content.savedAt }
+  }
   if (r.content && !force && !isStale(r)) return r.content
   if (loadingIds.has(id)) return null
   loadingIds.add(id)
