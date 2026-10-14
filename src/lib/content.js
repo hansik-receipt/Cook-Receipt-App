@@ -220,6 +220,12 @@ function splitItems(line) {
   return out
 }
 
+/** 예전 방식으로 저장된 인스타그램 글(리더 텍스트 그대로)을 인터넷 없이 다시 정리한다. 재료·순서를 못 찾으면 null */
+export function reparseInstagram(text) {
+  const r = parseInstagramText(text)
+  return r && (r.ingredients?.length || r.steps?.length) ? { ...r, parser: IG_PARSER } : null
+}
+
 const ENTITY = { amp: '&', lt: '<', gt: '>', quot: '"', apos: "'", nbsp: ' ' }
 function decodeEntities(t) {
   return t.replace(/&(#x[0-9a-f]+|#\d+|\w+);/gi, (all, e) => {
